@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoahShop — Your Store</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: #2a2a3a;
+    --accent: #7c6af7;
+    --accent2: #4ecca3;
+    --text: #e8e8f0;
+    --muted: #7a7a9a;
+    --danger: #f7566a;
+    --success: #4ecca3;
+    --warning: #f7c948;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── NAV ── */
+  .top-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,15,0.92); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 60px;
+  }
+  .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; color: var(--accent); cursor: pointer; }
+  .nav-logo span { color: var(--accent2); }
+  .nav-links { display: flex; gap: 1rem; }
+  .nav-btn {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    padding: 0.45rem 1.1rem; border-radius: 8px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn.primary:hover { background: #6a58e0; }
+  .cart-btn { position: relative; }
+  .cart-badge {
+    position: absolute; top: -6px; right: -6px;
+    background: var(--danger); color: #fff; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+
+  /* ── SIDEBAR ── */
+  .layout { display: flex; padding-top: 60px; min-height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--surface); border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem; position: fixed; top: 60px; bottom: 0; left: 0;
+    overflow-y: auto;
+  }
+  .sidebar-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin: 1.2rem 0 0.5rem; }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 0.7rem;
+    padding: 0.6rem 0.8rem; border-radius: 8px; cursor: pointer;
+    font-size: 0.88rem; color: var(--muted); transition: all 0.2s; margin-bottom: 2px;
+  }
+  .sidebar-item:hover { background: var(--surface2); color: var(--text); }
+  .sidebar-item.active { background: rgba(124,106,247,0.15); color: var(--accent); }
+  .sidebar-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+  /* ── MAIN ── */
+  .main { margin-left: 240px; padding: 2rem; flex: 1; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem;
+  }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.4rem; }
+  .stat-card .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.4rem; }
+  .stat-card .value { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; }
+  .stat-card .change { font-size: 0.78rem; color: var(--success); margin-top: 0.2rem; }
+  .stat-card .change.neg { color: var(--danger); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { text-align: left; padding: 0.8rem 1rem; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); font-family: 'Syne', sans-serif; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  td { padding: 0.9rem 1rem; border-bottom: 1px solid rgba(42,42,58,0.5); vertical-align: middle; }
+  tr:hover td { background: var(--surface2); }
+  .badge { display: inline-block; padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+  .badge.active { background: rgba(78,204,163,0.15); color: var(--success); }
+  .badge.draft { background: rgba(122,122,154,0.15); color: var(--muted); }
+  .badge.sold { background: rgba(247,86,106,0.15); color: var(--danger); }
+  .product-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+
+  /* ── BUTTONS ── */
+  .btn { padding: 0.6rem 1.2rem; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6a58e0; transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.8rem; }
+
+  /* ── FORMS ── */
+  .form-group { margin-bottom: 1.2rem; }
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.4rem; font-weight: 500; }
+  input, select, textarea {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 0.7rem 0.9rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 90px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+  .page-title { font-size: 1.6rem; font-weight: 700; }
+  .page-subtitle { color: var(--muted); font-size: 0.88rem; margin-top: 0.2rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 2rem; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+  .modal-title { font-size: 1.2rem; font-weight: 700; }
+  .close-btn { background: none; border: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+  .close-btn:hover { color: var(--text); }
+
+  /* ── STOREFRONT ── */
+  .store-hero {
+    background: linear-gradient(135deg, #1c1c30 0%, #0f0f1a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 4rem 2rem; text-align: center;
+  }
+  .store-hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 0.8rem; }
+  .store-hero p { color: var(--muted); font-size: 1.1rem; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1.5rem; padding: 2rem; }
+  .product-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; cursor: pointer; transition: all 0.25s;
+  }
+  .product-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 40px rgba(124,106,247,0.15); }
+  .product-img { width: 100%; height: 200px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 4rem; }
+  .product-info { padding: 1.2rem; }
+  .product-name { font-family: 'Syne', sans-serif; font-weight: 600; margin-bottom: 0.3rem; }
+  .product-price { color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+  .product-desc { color: var(--muted); font-size: 0.82rem; margin: 0.4rem 0 1rem; }
+  .add-to-cart { width: 100%; }
+
+  /* ── CART ── */
+  .cart-item { display: flex; gap: 1rem; align-items: center; padding: 1rem 0; border-bottom: 1px solid var(--border); }
+  .cart-item-emoji { font-size: 2rem; width: 50px; height: 50px; background: var(--surface2); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-weight: 500; font-size: 0.9rem; }
+  .cart-item-price { color: var(--accent); font-size: 0.85rem; margin-top: 0.2rem; }
+  .qty-control { display: flex; align-items: center; gap: 0.5rem; }
+  .qty-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+  .qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cart-total { display: flex; justify-content: space-between; padding: 1rem 0; font-size: 1.1rem; font-weight: 600; }
+  .order-summary { background: var(--surface2); border-radius: 10px; padding: 1rem; margin: 1rem 0; }
+  .order-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 0.3rem 0; }
+  .order-row.total { font-weight: 700; font-size: 1rem; border-top: 1px solid var(--border); padding-top: 0.7rem; margin-top: 0.3rem; color: var(--accent2); }
+
+  /* ── CREDIT CARD ── */
+  .card-visual {
+    background: linear-gradient(135deg, #7c6af7, #4ecca3);
+    border-radius: 16px; padding: 1.5rem; color: #fff; margin-bottom: 1.5rem;
+    font-family: 'Syne', sans-serif; position: relative; overflow: hidden; height: 170px;
+  }
+  .card-visual::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; background: rgba(255,255,255,0.08); border-radius: 50%;
+  }
+  .card-visual::after {
+    content: ''; position: absolute; bottom: -50px; left: -20px;
+    width: 120px; height: 120px; background: rgba(255,255,255,0.06); border-radius: 50%;
+  }
+  .card-chip { width: 40px; height: 30px; background: rgba(255,255,255,0.3); border-radius: 5px; margin-bottom: 1rem; }
+  .card-number-display { font-size: 1.05rem; letter-spacing: 0.25em; margin-bottom: 1rem; opacity: 0.9; }
+  .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+  .card-label { font-size: 0.65rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; }
+  .card-value { font-size: 0.9rem; font-weight: 600; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .tab { padding: 0.7rem 1.2rem; cursor: pointer; font-size: 0.88rem; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+  .tab:hover { color: var(--text); }
+
+  /* ── ORDERS ── */
+  .order-status { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem; }
+  .order-status.pending { background: rgba(247,201,72,0.15); color: var(--warning); }
+  .order-status.fulfilled { background: rgba(78,204,163,0.15); color: var(--success); }
+  .order-status.cancelled { background: rgba(247,86,106,0.15); color: var(--danger); }
+
+  /* ── NOTIFICATIONS ── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    background: var(--surface2); border: 1px solid var(--accent); border-radius: 10px;
+    padding: 0.9rem 1.4rem; font-size: 0.88rem; display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .toast.show { display: flex; align-items: center; gap: 0.6rem; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 4rem 2rem; }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+  .empty p { color: var(--muted); font-size: 0.88rem; }
+
+  /* ── SECTION TITLE ── */
+  .section-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; }
+
+  /* STORE NAV (storefront) */
+  .store-topbar {
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .store-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; }
+
+  /* divider */
+  .divider { height: 1px; background: var(--border); margin: 1.2rem 0; }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  .gap-2 { display: flex; gap: 0.5rem; }
+  .text-muted { color: var(--muted); font-size: 0.85rem; }
+  .text-success { color: var(--success); }
+  .text-accent { color: var(--accent); }
+  .mt-1 { margin-top: 0.5rem; }
+  .mb-1 { margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div class="toast" id="toast">✓ <span id="toast-msg"></span></div>
+
+<!-- ═══════════════════ TOP NAV ═══════════════════ -->
+<nav class="top-nav" id="main-nav">
+  <div class="nav-logo" onclick="showView('dashboard')">Noah<span>Shop</span></div>
+  <div class="nav-links">
+    <button class="nav-btn" onclick="showView('storefront')">🛍 View Store</button>
+    <button class="nav-btn cart-btn" onclick="showView('cart')">
+      🛒 Cart
+      <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+    <button class="nav-btn primary" onclick="openModal('add-product-modal')">+ Add Product</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════ DASHBOARD LAYOUT ═══════════════════ -->
+<div class="layout" id="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-label">Main</div>
+    <div class="sidebar-item active" onclick="showSection('overview', this)"><span class="sidebar-icon">📊</span> Overview</div>
+    <div class="sidebar-item" onclick="showSection('products-section', this)"><span class="sidebar-icon">📦</span> Products</div>
+    <div class="sidebar-item" onclick="showSection('orders-section', this)"><span class="sidebar-icon">🧾</span> Orders</div>
+    <div class="sidebar-label">Store</div>
+    <div class="sidebar-item" onclick="showView('storefront')"><span class="sidebar-icon">🛍</span> Storefront</div>
+    <div class="sidebar-item" onclick="showSection('settings-section', this)"><span class="sidebar-icon">⚙️</span> Settings</div>
+    <div class="sidebar-label">Account</div>
+    <div class="sidebar-item" onclick="showView('storefront')"><span class="sidebar-icon">👤</span> Noah's Store</div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ─── OVERVIEW ─── -->
+    <section id="overview">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Welcome back, Noah 👋</div>
+          <div class="page-subtitle">Here's what's happening with your store today.</div>
+        </div>
+        <button class="btn btn-primary" onclick="showView('storefront')">View Storefront →</button>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="label">Total Revenue</div>
+          <div class="value text-accent" id="stat-revenue">$0.00</div>
+          <div class="change">↑ All time</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Orders</div>
+          <div class="value" id="stat-orders">0</div>
+          <div class="change">↑ Lifetime</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Products Listed</div>
+          <div class="value" id="stat-products">0</div>
+          <div class="change">Active listings</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Pending Orders</div>
+          <div class="value" id="stat-pending">0</div>
+          <div class="change neg">Needs fulfillment</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Recent Orders</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="recent-orders-table"><tr><td colspan="6"><div class="empty"><div class="empty-icon">🧾</div><div>No orders yet. Share your store to start selling!</div></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PRODUCTS ─── -->
+    <section id="products-section" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Products</div>
+          <div class="page-subtitle">Manage your dropshipping inventory</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-product-modal')">+ Add Product</button>
+      </div>
+
+      <div class="tabs">
+        <div class="tab active">All</div>
+        <div class="tab">Active</div>
+        <div class="tab">Draft</div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Product</th><th>Price</th><th>Cost</th><th>Profit</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="products-table"><tr><td colspan="7"><div class="empty"><div class="empty-icon">📦</div><h3>No products yet</h3><p>Click "+ Add Product" to list your first item</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── ORDERS ─── -->
+    <section id="orders-section" style="display:none">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Orders</div>
+          <div class="page-subtitle">Track and fulfill customer orders</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Order #</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="orders-table"><tr><td colspan="7"><div class="empty"><div class="empty-icon">🚚</div><h3>No orders yet</h3><p>Orders will appear here when customers purchase from your store</p></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SETTINGS ─── -->
+    <section id="settings-section" style="display:none">
+      <div class="page-header">
+        <div><div class="page-title">Store Settings</div><div class="page-subtitle">Customize your store details</div></div>
+        <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+      </div>
+      <div class="card" style="max-width:640px">
+        <div class="section-title">Store Details</div>
+        <div class="form-group"><label>Store Name</label><input id="setting-name" value="Noah's Store" /></div>
+        <div class="form-group"><label>Store Description</label><textarea id="setting-desc">Welcome to my store! Quality products, fast shipping.</textarea></div>
+        <div class="form-group"><label>Contact Email</label><input id="setting-email" type="email" placeholder="noah@example.com" /></div>
+        <div class="divider"></div>
+        <div class="section-title">Payment Info</div>
+        <div class="form-group"><label>Payout Method</label><select><option>Bank Transfer</option><option>PayPal</option><option>Stripe</option></select></div>
+        <div class="form-group"><label>Currency</label><select><option>USD ($)</option><option>EUR (€)</option><option>GBP (£)</option></select></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ═══════════════════ STOREFRONT VIEW ═══════════════════ -->
+<div class="view" id="storefront-view">
+  <div class="store-topbar">
+    <div class="store-logo" id="store-display-name">Noah's Store</div>
+    <div style="display:flex;gap:0.8rem;align-items:center">
+      <button class="nav-btn" onclick="showView('dashboard')">⚙️ Dashboard</button>
+      <button class="nav-btn cart-btn" onclick="showView('cart')">
+        🛒 Cart <span class="cart-badge" id="cart-badge2">0</span>
+      </button>
+    </div>
+  </div>
+  <div class="store-hero">
+    <h1>Shop Everything</h1>
+    <p>Curated products. Fast shipping. Real deals.</p>
+  </div>
+  <div class="product-grid" id="storefront-products">
+    <div class="empty" style="grid-column:1/-1"><div class="empty-icon">🛍</div><h3>No products yet</h3><p>Go to your dashboard and add products to see them here.</p></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CART VIEW ═══════════════════ -->
+<div class="view" id="cart-view">
+  <div style="max-width:700px;margin:0 auto;padding:2rem">
+    <div class="flex-between mb-1">
+      <h2 style="font-size:1.6rem">Your Cart 🛒</h2>
+      <button class="nav-btn" onclick="goBackFromCart()">← Continue Shopping</button>
+    </div>
+    <div id="cart-items-list"></div>
+    <div id="cart-summary" style="display:none">
+      <div class="order-summary">
+        <div class="order-row"><span>Subtotal</span><span id="cart-sub">$0.00</span></div>
+        <div class="order-row"><span>Shipping</span><span class="text-success">Free</span></div>
+        <div class="order-row total"><span>Total</span><span id="cart-total-val">$0.00</span></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:0.9rem;font-size:1rem" onclick="openModal('checkout-modal')">Proceed to Checkout →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADD PRODUCT MODAL ═══════════════════ -->
+<div class="modal-overlay" id="add-product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Product</div>
+      <button class="close-btn" onclick="closeModal('add-product-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label>Product Name *</label>
+      <input id="prod-name" placeholder="e.g. Wireless Earbuds Pro" />
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="prod-desc" placeholder="Describe your product..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Product Emoji / Icon</label>
+      <input id="prod-emoji" placeholder="🎧" maxlength="4" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Selling Price ($) *</label>
+        <input id="prod-price" type="number" min="0" step="0.01" placeholder="29.99" />
+      </div>
+      <div class="form-group">
+        <label>Your Cost ($)</label>
+        <input id="prod-cost" type="number" min="0" step="0.01" placeholder="12.00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Stock Quantity</label>
+        <input id="prod-stock" type="number" min="0" placeholder="100" />
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="prod-status">
+          <option value="active">Active</option>
+          <option value="draft">Draft</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex-between" style="margin-top:0.5rem">
+      <button class="btn btn-secondary" onclick="closeModal('add-product-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addProduct()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CHECKOUT MODAL ═══════════════════ -->
+<div class="modal-overlay" id="checkout-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Checkout</div>
+      <button class="close-btn" onclick="closeModal('checkout-modal')">×</button>
+    </div>
+
+    <div id="checkout-step-1">
+      <div class="section-title">Shipping Information</div>
+      <div class="form-group"><label>Full Name *</label><input id="chk-name" placeholder="John Smith" /></div>
+      <div class="form-group"><label>Email *</label><input id="chk-email" type="email" placeholder="john@example.com" /></div>
+      <div class="form-group"><label>Address *</label><input id="chk-addr" placeholder="123 Main Street" /></div>
+      <div class="form-row">
+        <div class="form-group"><label>City</label><input id="chk-city" placeholder="New York" /></div>
+        <div class="form-group"><label>ZIP Code</label><input id="chk-zip" placeholder="10001" /></div>
+      </div>
+      <div class="form-group"><label>Country</label>
+        <select id="chk-country">
+          <option>United States</option><option>Canada</option><option>United Kingdom</option>
+          <option>Australia</option><option>Germany</option><option>France</option><option>Other</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="checkoutStep2()">Continue to Payment →</button>
+    </div>
+
+    <div id="checkout-step-2" style="display:none">
+      <div class="section-title">Payment Details</div>
+
+      <!-- Card Visual -->
+      <div class="card-visual">
+        <div class="card-chip"></div>
+        <div class="card-number-display" id="card-display-num">•••• •••• •••• ••••</div>
+        <div class="card-bottom">
+          <div>
+            <div class="card-label">Card Holder</div>
+            <div class="card-value" id="card-display-name">YOUR NAME</div>
+          </div>
+          <div>
+            <div class="card-label">Expires</div>
+            <div class="card-value" id="card-display-exp">MM/YY</div>
+          </div>
+          <div style="font-size:1.8rem">💳</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Card Number *</label>
+        <input id="card-num" placeholder="1234 5678 9012 3456" maxlength="19" oninput="formatCard(this)" />
+      </div>
+      <div class="form-group">
+        <label>Cardholder Name *</label>
+        <input id="card-name" placeholder="John Smith" oninput="document.getElementById('card-display-name').textContent = this.value.toUpperCase() || 'YOUR NAME'" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Expiry Date *</label>
+          <input id="card-exp" placeholder="MM/YY" maxlength="5" oninput="formatExp(this)" />
+        </div>
+        <div class="form-group">
+          <label>CVV *</label>
+          <input id="card-cvv" placeholder="•••" maxlength="4" type="password" />
+        </div>
+      </div>
+
+      <div class="order-summary mt-1">
+        <div class="order-row"><span>Items</span><span id="chk-items-count">0</span></div>
+        <div class="order-row"><span>Shipping</span><span class="text-success">Free</span></div>
+        <div class="order-row total"><span>Total Due</span><span id="chk-total">$0.00</span></div>
+      </div>
+
+      <div style="display:flex;gap:0.8rem;margin-top:0.5rem">
+        <button class="btn btn-secondary" onclick="document.getElementById('checkout-step-1').style.display='block';document.getElementById('checkout-step-2').style.display='none'">← Back</button>
+        <button class="btn btn-primary" style="flex:1;padding:0.9rem" onclick="placeOrder()">🔒 Place Order</button>
+      </div>
+      <div class="text-muted" style="text-align:center;margin-top:0.8rem;font-size:0.78rem">🔒 Secured with 256-bit SSL encryption</div>
+    </div>
+
+    <div id="checkout-step-3" style="display:none;text-align:center;padding:2rem 0">
+      <div style="font-size:4rem;margin-bottom:1rem">🎉</div>
+      <h2 style="margin-bottom:0.5rem">Order Placed!</h2>
+      <p class="text-muted" style="margin-bottom:1.5rem">Thank you for your order. A confirmation will be sent to your email.</p>
+      <div class="order-summary" style="text-align:left">
+        <div class="order-row"><span>Order #</span><span id="order-num-confirm" class="text-accent"></span></div>
+        <div class="order-row"><span>Email</span><span id="order-email-confirm"></span></div>
+        <div class="order-row total"><span>Total Charged</span><span id="order-total-confirm"></span></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:1.5rem" onclick="closeModal('checkout-modal');showView('dashboard')">Go to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════ STATE ═══════════
+let products = [];
+let orders = [];
+let cart = [];
+let lastView = 'dashboard';
+let orderCounter = 1000;
+
+// ═══════════ NAVIGATION ═══════════
+function showView(view) {
+  // hide all
+  document.getElementById('app-layout').style.display = 'none';
+  document.getElementById('storefront-view').classList.remove('active');
+  document.getElementById('cart-view').classList.remove('active');
+
+  if (view === 'dashboard') {
+    document.getElementById('app-layout').style.display = 'flex';
+    lastView = 'dashboard';
+  } else if (view === 'storefront') {
+    document.getElementById('storefront-view').classList.add('active');
+    renderStorefront();
+    lastView = 'storefront';
+  } else if (view === 'cart') {
+    document.getElementById('cart-view').classList.add('active');
+    renderCart();
+  }
+  updateCartBadge();
+}
+
+function goBackFromCart() {
+  showView(lastView || 'storefront');
+}
+
+function showSection(id, el) {
+  ['overview','products-section','orders-section','settings-section'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'block';
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (id === 'products-section') renderProductsTable();
+  if (id === 'orders-section') renderOrdersTable();
+}
+
+// ═══════════ MODALS ═══════════
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════ TOAST ═══════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════ PRODUCTS ═══════════
+function addProduct() {
+  const name = document.getElementById('prod-name').value.trim();
+  const price = parseFloat(document.getElementById('prod-price').value);
+  if (!name || isNaN(price)) { alert('Please enter product name and price.'); return; }
+  const product = {
+    id: Date.now(),
+    name,
+    desc: document.getElementById('prod-desc').value.trim(),
+    emoji: document.getElementById('prod-emoji').value.trim() || '📦',
+    price,
+    cost: parseFloat(document.getElementById('prod-cost').value) || 0,
+    stock: parseInt(document.getElementById('prod-stock').value) || 99,
+    status: document.getElementById('prod-status').value
+  };
+  products.push(product);
+  closeModal('add-product-modal');
+  clearProductForm();
+  renderProductsTable();
+  renderStorefront();
+  updateStats();
+  showToast(`"${name}" added to your store!`);
+}
+
+function clearProductForm() {
+  ['prod-name','prod-desc','prod-emoji','prod-price','prod-cost','prod-stock'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('prod-status').value = 'active';
+}
+
+function deleteProduct(id) {
+  if (!confirm('Delete this product?')) return;
+  products = products.filter(p => p.id !== id);
+  renderProductsTable(); renderStorefront(); updateStats();
+  showToast('Product deleted');
+}
+
+function renderProductsTable() {
+  const tbody = document.getElementById('products-table');
+  if (!products.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📦</div><h3>No products yet</h3><p>Click "+ Add Product" to list your first item</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = products.map(p => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:0.8rem">
+        <div class="product-thumb">${p.emoji}</div>
+        <div><div style="font-weight:500">${p.name}</div><div class="text-muted">${p.desc ? p.desc.slice(0,40)+'…' : ''}</div></div>
+      </div></td>
+      <td>$${p.price.toFixed(2)}</td>
+      <td>$${p.cost.toFixed(2)}</td>
+      <td class="text-success">$${(p.price - p.cost).toFixed(2)}</td>
+      <td>${p.stock}</td>
+      <td><span class="badge ${p.status}">${p.status}</span></td>
+      <td><div class="gap-2">
+        <button class="btn btn-secondary btn-sm" onclick="showToast('Edit coming soon!')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})">Delete</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+// ═══════════ STOREFRONT ═══════════
+function renderStorefront() {
+  const container = document.getElementById('storefront-products');
+  const storeName = document.getElementById('setting-name') ? document.getElementById('setting-name').value : "Noah's Store";
+  document.getElementById('store-display-name').textContent = storeName;
+  const active = products.filter(p => p.status === 'active');
+  if (!active.length) {
+    container.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🛍</div><h3>No products yet</h3><p>Go to your dashboard and add products to see them here.</p></div>`;
+    return;
+  }
+  container.innerHTML = active.map(p => `
+    <div class="product-card">
+      <div class="product-img">${p.emoji}</div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc || 'High quality product. Fast shipping.'}</div>
+        <div class="product-price">$${p.price.toFixed(2)}</div>
+        <button class="btn btn-primary add-to-cart" style="margin-top:0.8rem" onclick="addToCart(${p.id})">Add to Cart</button>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════ CART ═══════════
+function addToCart(productId) {
+  const p = products.find(p => p.id === productId);
+  if (!p) return;
+  const existing = cart.find(i => i.id === productId);
+  if (existing) { existing.qty++; }
+  else { cart.push({ id: p.id, name: p.name, price: p.price, emoji: p.emoji, qty: 1 }); }
+  updateCartBadge();
+  showToast(`${p.emoji} "${p.name}" added to cart!`);
+}
+
+function updateCartBadge() {
+  const count = cart.reduce((s, i) => s + i.qty, 0);
+  document.getElementById('cart-badge').textContent = count;
+  document.getElementById('cart-badge2').textContent = count;
+}
+
+function renderCart() {
+  const list = document.getElementById('cart-items-list');
+  const summary = document.getElementById('cart-summary');
+  if (!cart.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🛒</div><h3>Your cart is empty</h3><p>Add some products from the store!</p></div>`;
+    summary.style.display = 'none';
+    return;
+  }
+  list.innerHTML = cart.map(i => `
+    <div class="cart-item">
+      <div class="cart-item-emoji">${i.emoji}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${i.name}</div>
+        <div class="cart-item-price">$${(i.price * i.qty).toFixed(2)}</div>
+      </div>
+      <div class="qty-control">
+        <button class="qty-btn" onclick="changeQty(${i.id}, -1)">−</button>
+        <span style="min-width:24px;text-align:center">${i.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${i.id}, 1)">+</button>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="removeFromCart(${i.id})" style="margin-left:0.5rem">✕</button>
+    </div>`).join('');
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('cart-sub').textContent = '$' + total.toFixed(2);
+  document.getElementById('cart-total-val').textContent = '$' + total.toFixed(2);
+  document.getElementById('chk-total').textContent = '$' + total.toFixed(2);
+  document.getElementById('chk-items-count').textContent = cart.reduce((s,i)=>s+i.qty,0) + ' item(s)';
+  summary.style.display = 'block';
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  item.qty += delta;
+  if (item.qty <= 0) cart = cart.filter(i => i.id !== id);
+  updateCartBadge(); renderCart();
+}
+
+function removeFromCart(id) { cart = cart.filter(i => i.id !== id); updateCartBadge(); renderCart(); }
+
+// ═══════════ CHECKOUT ═══════════
+function checkoutStep2() {
+  const name = document.getElementById('chk-name').value.trim();
+  const email = document.getElementById('chk-email').value.trim();
+  const addr = document.getElementById('chk-addr').value.trim();
+  if (!name || !email || !addr) { alert('Please fill in all required fields.'); return; }
+  document.getElementById('checkout-step-1').style.display = 'none';
+  document.getElementById('checkout-step-2').style.display = 'block';
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  document.getElementById('chk-total').textContent = '$' + total.toFixed(2);
+}
+
+function formatCard(input) {
+  let v = input.value.replace(/\D/g,'').substring(0,16);
+  input.value = v.replace(/(.{4})/g,'$1 ').trim();
+  const display = v.padEnd(16,'•').replace(/(.{4})/g,'$1 ').trim();
+  document.getElementById('card-display-num').textContent = display;
+}
+
+function formatExp(input) {
+  let v = input.value.replace(/\D/g,'');
+  if (v.length >= 2) v = v.substring(0,2) + '/' + v.substring(2,4);
+  input.value = v;
+  document.getElementById('card-display-exp').textContent = v || 'MM/YY';
+}
+
+function placeOrder() {
+  const cardNum = document.getElementById('card-num').value.replace(/\s/g,'');
+  const cardName = document.getElementById('card-name').value.trim();
+  const cardExp = document.getElementById('card-exp').value;
+  const cardCvv = document.getElementById('card-cvv').value;
+  if (cardNum.length < 16 || !cardName || cardExp.length < 5 || cardCvv.length < 3) {
+    alert('Please fill in all payment details correctly.'); return;
+  }
+
+  orderCounter++;
+  const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const order = {
+    id: orderCounter,
+    customer: document.getElementById('chk-name').value,
+    email: document.getElementById('chk-email').value,
+    items: [...cart],
+    total,
+    status: 'pending',
+    date: new Date().toLocaleDateString()
+  };
+  orders.push(order);
+  cart = [];
+  updateCartBadge();
+  updateStats();
+  renderOrdersTable();
+
+  // Show confirmation
+  document.getElementById('checkout-step-2').style.display = 'none';
+  document.getElementById('checkout-step-3').style.display = 'block';
+  document.getElementById('order-num-confirm').textContent = '#' + orderCounter;
+  document.getElementById('order-email-confirm').textContent = order.email;
+  document.getElementById('order-total-confirm').textContent = '$' + total.toFixed(2);
+}
+
+// ═══════════ ORDERS TABLE ═══════════
+function renderOrdersTable() {
+  const tbody = document.getElementById('orders-table');
+  const recentTbody = document.getElementById('recent-orders-table');
+  if (!orders.length) {
+    const empty = `<tr><td colspan="7"><div class="empty"><div class="empty-icon">🚚</div><h3>No orders yet</h3><p>Orders appear here when customers buy</p></div></td></tr>`;
+    tbody.innerHTML = empty;
+    recentTbody.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-icon">🧾</div><div>No orders yet. Share your store to start selling!</div></div></td></tr>`;
+    return;
+  }
+  const rows = orders.map(o => `
+    <tr>
+      <td class="text-accent">#${o.id}</td>
+      <td>${o.customer}</td>
+      <td>${o.items.reduce((s,i)=>s+i.qty,0)} item(s)</td>
+      <td>$${o.total.toFixed(2)}</td>
+      <td><span class="order-status ${o.status}">${o.status}</span></td>
+      <td>${o.date}</td>
+      <td><button class="btn btn-secondary btn-sm" onclick="fulfillOrder(${o.id})">Fulfill</button></td>
+    </tr>`).join('');
+  tbody.innerHTML = rows;
+  recentTbody.innerHTML = orders.slice(-5).reverse().map(o => `
+    <tr>
+      <td class="text-accent">#${o.id}</td>
+      <td>${o.customer}</td>
+      <td>${o.items.reduce((s,i)=>s+i.qty,0)} item(s)</td>
+      <td>$${o.total.toFixed(2)}</td>
+      <td><span class="order-status ${o.status}">${o.status}</span></td>
+      <td>${o.date}</td>
+    </tr>`).join('');
+}
+
+function fulfillOrder(id) {
+  const o = orders.find(o => o.id === id);
+  if (o) { o.status = 'fulfilled'; renderOrdersTable(); updateStats(); showToast(`Order #${id} marked as fulfilled!`); }
+}
+
+// ═══════════ STATS ═══════════
+function updateStats() {
+  const revenue = orders.reduce((s, o) => s + o.total, 0);
+  const pending = orders.filter(o => o.status === 'pending').length;
+  document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
+  document.getElementById('stat-orders').textContent = orders.length;
+  document.getElementById('stat-products').textContent = products.filter(p => p.status === 'active').length;
+  document.getElementById('stat-pending').textContent = pending;
+}
+
+function saveSettings() { showToast('Settings saved!'); }
+
+// ══ INIT ══
+showView('dashboard');
+</script>
+</body>
+</html>

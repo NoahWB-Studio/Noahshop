@@ -1136,7 +1136,7 @@ function toggleAdminLogin(){document.getElementById('admin-login').classList.tog
 function adminLogin(){
   const u=document.getElementById('admin-user').value;
   const p=document.getElementById('admin-pass').value;
-  if(u==='admin'&&(p==='admin1234'||p==='Noahjr05!@qw')){
+  if(u==='admin'&&(p==='admin1234'||p==='')){
     document.getElementById('admin-login').classList.remove('open');openAdminPanel();
   }else{showToast('Invalid credentials');}
 }
